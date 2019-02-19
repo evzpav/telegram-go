@@ -1,6 +1,6 @@
 # telegram-go
 
-## Example on how to use telegram with Go language
+## Example on how to use Telegram with Go language
 
 ### To run example:
 
@@ -14,7 +14,7 @@ go build
 
 ```
 
-## Steps to get Telegrram credentials
+## Steps to get Telegram credentials
 1) Search 'BotFather' on Telegram
 2) Follow instructions to create a bot
 3) Get the token and use it on .env TELEGRAM_BOT_TOKEN variable
