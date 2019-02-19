@@ -13,6 +13,9 @@ go build
 ./telegram-go
 
 ```
+### Expected result:
+![telegram-example](example-result.png "Expected result")
+
 
 ## Steps to get Telegram credentials
 1) Search 'BotFather' on Telegram
