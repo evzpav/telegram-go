@@ -7,15 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
-
-	"github.com/joho/godotenv"
 )
-
-var netClient = &http.Client{
-	Timeout: time.Second * time.Duration(10),
-}
 
 type tgPayload struct {
 	ChatID    string `json:"chat_id"`
@@ -24,29 +17,41 @@ type tgPayload struct {
 }
 
 var telegramURL = "https://api.telegram.org"
-var telegramBotToken string
-var telegramGroupID string
 
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+type TelegramClient struct {
+	HttpClient *http.Client
+	BotToken   string
+	GroupID    string
+}
+
+func NewTelegramClient(telegramBotToken, telegramGroupID string) *TelegramClient {
+	netClient := &http.Client{
+		Timeout: time.Second * time.Duration(10),
 	}
-	telegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
-	telegramGroupID = os.Getenv("TELEGRAM_GROUP_ID")
+
+	return &TelegramClient{
+		HttpClient: netClient,
+		BotToken:   telegramBotToken,
+		GroupID:    telegramGroupID,
+	}
+}
+
+func (t *TelegramClient) changeHttpClient(newHttpClient *http.Client) *TelegramClient {
+	t.HttpClient = newHttpClient
+	return t
 }
 
 //SendMessage uses sendMessage method from Telegram API
-func SendMessage(text string) {
+func (t *TelegramClient) SendMessage(text string) {
 	var payload tgPayload
-	payload.ChatID = telegramGroupID
+	payload.ChatID = t.GroupID
 	payload.Text = text
 	payload.ParseMode = "HTML"
 	bs, err := json.Marshal(&payload)
-	url := fmt.Sprintf("%s/bot%s/sendMessage", telegramURL, telegramBotToken)
+	url := fmt.Sprintf("%s/bot%s/sendMessage", telegramURL, t.BotToken)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bs))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := netClient.Do(req)
+	resp, err := t.HttpClient.Do(req)
 	if err != nil {
 		panic(err)
 	}
