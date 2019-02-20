@@ -28,6 +28,7 @@ func NewTelegramClient(telegramBotToken, telegramGroupID string) *TelegramClient
 	netClient := &http.Client{
 		Timeout: time.Second * time.Duration(10),
 	}
+
 	return &TelegramClient{
 		HttpClient: netClient,
 		BotToken:   telegramBotToken,

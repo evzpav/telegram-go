@@ -21,13 +21,12 @@ func init() {
 
 func main() {
 
-	t := telegram.NewTelegramClient(telegramBotToken, telegramGroupID)
-
 	message := "<b> Bold text </b>"
 	message += "\n" // new line
 	message += "<i>Italic text</i> \n"
 	message += "<code> This is code text </code> \n"
 	message += "@BotFather \n" //use existing Telegram username
 
+	t := telegram.NewTelegramClient(telegramBotToken, telegramGroupID)
 	t.SendMessage(message)
 }
