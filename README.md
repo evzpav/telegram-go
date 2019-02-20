@@ -4,6 +4,16 @@
 
 ### To run example:
 
+```go
+message := "<b> Bold text </b>"
+	message += "\n" // new line
+	message += "<i>Italic text</i> \n"
+	message += "<code> This is code text </code> \n"
+	message += "@BotFather \n" //use existing Telegram username
+
+	telegram.SendMessage(message)
+```
+
 ```bash
 cp .env_example .env
 # Fill bot token and group ID or channel ID
