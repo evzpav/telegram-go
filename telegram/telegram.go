@@ -37,15 +37,13 @@ func NewClient(telegramBotToken, telegramGroupID string) *Client {
 }
 
 //ChangeHTTPClient set new http client if needed
-func (t *Client) ChangeHTTPClient(newHTTPClient *http.Client) *Client {
+func (t *Client) ChangeHTTPClient(newHTTPClient *http.Client) {
 	t.HTTPClient = newHTTPClient
-	return t
 }
 
 //ChangeTimeout set new timeout in seconds
-func (t *Client) ChangeTimeout(newTimeout int) *Client {
+func (t *Client) ChangeTimeout(newTimeout int) {
 	t.HTTPClient.Timeout = setSecondsDuration(newTimeout)
-	return t
 }
 
 //SendMessage uses sendMessage method from Telegram API
