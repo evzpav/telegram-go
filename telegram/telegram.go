@@ -16,7 +16,7 @@ type tgPayload struct {
 }
 
 var telegramURL = "https://api.telegram.org"
-var defaultTimeout = time.Second * time.Duration(10)
+var defaultTimeout = 10
 
 type TelegramClient struct {
 	HttpClient *http.Client
@@ -27,7 +27,7 @@ type TelegramClient struct {
 func NewTelegramClient(telegramBotToken, telegramGroupID string) *TelegramClient {
 	return &TelegramClient{
 		HttpClient: &http.Client{
-			Timeout: defaultTimeout,
+			Timeout: setSecondsDuration(defaultTimeout),
 		},
 		BotToken: telegramBotToken,
 		GroupID:  telegramGroupID,
@@ -39,8 +39,8 @@ func (t *TelegramClient) ChangeHttpClient(newHttpClient *http.Client) *TelegramC
 	return t
 }
 
-func (t *TelegramClient) ChangeTimeout(newTimeout time.Duration) *TelegramClient {
-	t.HttpClient.Timeout = newTimeout
+func (t *TelegramClient) ChangeTimeout(newTimeout int) *TelegramClient {
+	t.HttpClient.Timeout = setSecondsDuration(newTimeout)
 	return t
 }
 
@@ -66,4 +66,8 @@ func (t *TelegramClient) SendMessage(text string) (string, error) {
 	}
 	return string(body), nil
 
+}
+
+func setSecondsDuration(seconds int) time.Duration {
+	return time.Second * time.Duration(seconds)
 }
