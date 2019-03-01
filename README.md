@@ -32,8 +32,8 @@ func main() {
 ```
 
 ```bash
-cp .env_example .env
-# Fill bot token and group ID or channel ID
+export TELEGRAM_BOT_TOKEN=yourtoken
+export TELEGRAM_GROUP_ID=yourgrouporchannelid
 
 go build
 
