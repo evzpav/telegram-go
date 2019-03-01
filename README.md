@@ -21,7 +21,7 @@ func main() {
 	message += "<code> This is code text </code> \n"
 	message += "@BotFather \n" //use existing Telegram username
 
-	t := telegram.NewTelegramClient(os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_GROUP_ID"))
+	t := telegram.NewClient(os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_GROUP_ID"))
 	sentMessage, err := t.SendMessage(message)
 	if err != nil {
 		//handle error
