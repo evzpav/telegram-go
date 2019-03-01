@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -17,6 +16,7 @@ type tgPayload struct {
 }
 
 var telegramURL = "https://api.telegram.org"
+var defaultTimeout = time.Second * time.Duration(10)
 
 type TelegramClient struct {
 	HttpClient *http.Client
@@ -25,24 +25,27 @@ type TelegramClient struct {
 }
 
 func NewTelegramClient(telegramBotToken, telegramGroupID string) *TelegramClient {
-	netClient := &http.Client{
-		Timeout: time.Second * time.Duration(10),
-	}
-
 	return &TelegramClient{
-		HttpClient: netClient,
-		BotToken:   telegramBotToken,
-		GroupID:    telegramGroupID,
+		HttpClient: &http.Client{
+			Timeout: defaultTimeout,
+		},
+		BotToken: telegramBotToken,
+		GroupID:  telegramGroupID,
 	}
 }
 
-func (t *TelegramClient) changeHttpClient(newHttpClient *http.Client) *TelegramClient {
+func (t *TelegramClient) ChangeHttpClient(newHttpClient *http.Client) *TelegramClient {
 	t.HttpClient = newHttpClient
 	return t
 }
 
+func (t *TelegramClient) ChangeTimeout(newTimeout time.Duration) *TelegramClient {
+	t.HttpClient.Timeout = newTimeout
+	return t
+}
+
 //SendMessage uses sendMessage method from Telegram API
-func (t *TelegramClient) SendMessage(text string) {
+func (t *TelegramClient) SendMessage(text string) (string, error) {
 	var payload tgPayload
 	payload.ChatID = t.GroupID
 	payload.Text = text
@@ -53,14 +56,14 @@ func (t *TelegramClient) SendMessage(text string) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := t.HttpClient.Do(req)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	fmt.Println("Telegram message sent:", string(body))
+	return string(body), nil
 
 }
