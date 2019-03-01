@@ -2,7 +2,7 @@
 
 ## Example on how to use Telegram with Go language
 
-### To run example:
+### Example code:
 
 ```go
 package main
@@ -31,6 +31,7 @@ func main() {
 }
 ```
 
+### To run example:
 ```bash
 export TELEGRAM_BOT_TOKEN=yourtoken
 export TELEGRAM_GROUP_ID=yourgrouporchannelid
