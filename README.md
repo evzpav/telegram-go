@@ -8,13 +8,13 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/evzpav/telegram-go/telegram"
 )
 
 func main() {
-
 	message := "<b> Bold text </b>"
 	message += "\n" // new line
 	message += "<i>Italic text</i> \n"
@@ -22,9 +22,13 @@ func main() {
 	message += "@BotFather \n" //use existing Telegram username
 
 	t := telegram.NewTelegramClient(os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_GROUP_ID"))
-	t.SendMessage(message)
+	sentMessage, err := t.SendMessage(message)
+	if err != nil {
+		//handle error
+		log.Println(err)
+	}
+	log.Println(sentMessage)
 }
-
 ```
 
 ```bash

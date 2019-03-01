@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	message := "<b> Bold text </b>"
 	message += "\n" // new line
 	message += "<i>Italic text</i> \n"
