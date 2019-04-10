@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 )
@@ -16,7 +17,7 @@ type tgPayload struct {
 }
 
 var telegramURL = "https://api.telegram.org"
-var defaultTimeout = 10
+var defaultTimeout = 30
 
 //Client struct
 type Client struct {
@@ -30,6 +31,10 @@ func NewClient(telegramBotToken, telegramGroupID string) *Client {
 	return &Client{
 		HTTPClient: &http.Client{
 			Timeout: setSecondsDuration(defaultTimeout),
+			Transport: &http.Transport{
+				Dial:                (&net.Dialer{Timeout: setSecondsDuration(defaultTimeout)}).Dial,
+				TLSHandshakeTimeout: setSecondsDuration(defaultTimeout),
+			},
 		},
 		BotToken: telegramBotToken,
 		GroupID:  telegramGroupID,
