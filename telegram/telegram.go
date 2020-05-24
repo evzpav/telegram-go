@@ -4,77 +4,111 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 )
 
-type tgPayload struct {
+const telegramURL string = "https://api.telegram.org"
+
+type telegramPayload struct {
 	ChatID    string `json:"chat_id"`
 	Text      string `json:"text"`
 	ParseMode string `json:"parse_mode"`
 }
 
-var telegramURL = "https://api.telegram.org"
-var defaultTimeout = 30
-
 //Client struct
 type Client struct {
-	HTTPClient *http.Client
-	BotToken   string
-	GroupID    string
+	httpClient *http.Client
+	botToken   string
+	groupID    string
+	baseURL    string
 }
 
-//NewClient creates telegram client
-func NewClient(telegramBotToken, telegramGroupID string) *Client {
+//New creates telegram Client
+func New(botToken, telegramGroupID string) *Client {
 	return &Client{
-		HTTPClient: &http.Client{
-			Timeout: setSecondsDuration(defaultTimeout),
+		httpClient: &http.Client{
+			Timeout: 60,
 			Transport: &http.Transport{
-				Dial:                (&net.Dialer{Timeout: setSecondsDuration(defaultTimeout)}).Dial,
-				TLSHandshakeTimeout: setSecondsDuration(defaultTimeout),
+				Dial:                (&net.Dialer{Timeout: 60}).Dial,
+				TLSHandshakeTimeout: 60,
 			},
 		},
-		BotToken: telegramBotToken,
-		GroupID:  telegramGroupID,
+		baseURL:  telegramURL,
+		botToken: botToken,
+		groupID:  telegramGroupID,
 	}
 }
 
-//ChangeHTTPClient set new http client if needed
-func (t *Client) ChangeHTTPClient(newHTTPClient *http.Client) {
-	t.HTTPClient = newHTTPClient
+//WithHTTPClient set new http Client if needed
+func (c *Client) WithHTTPClient(newHTTPClient *http.Client) {
+	c.httpClient = newHTTPClient
 }
 
-//ChangeTimeout set new timeout in seconds
-func (t *Client) ChangeTimeout(newTimeout int) {
-	t.HTTPClient.Timeout = setSecondsDuration(newTimeout)
+//WithTimeout set new timeout in seconds
+func (c *Client) WithTimeout(newTimeout int) {
+	c.httpClient.Timeout = time.Second * time.Duration(newTimeout)
+}
+
+//WithURL set new URL
+func (c *Client) WithURL(url string) {
+	c.baseURL = url
+}
+
+func (c *Client) baseRequest(method, path string, body interface{}) ([]byte, error) {
+	var bodyReader io.Reader
+
+	if body != nil {
+		bodyBs, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("error to marshal body %v", err)
+		}
+		bodyReader = bytes.NewBuffer(bodyBs)
+	}
+
+	url := c.baseURL + path
+
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("error in create request to [%s]: %v", url, err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error to complete request to [%s]: %v", url, err)
+	}
+
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error of [%s] reading body: %v", url, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request status code [%d] [%s]: %v", resp.StatusCode, url, string(bs))
+	}
+
+	return bs, nil
 }
 
 //SendMessage uses sendMessage method from Telegram API
-func (t *Client) SendMessage(text string) (string, error) {
-	var payload tgPayload
-	payload.ChatID = t.GroupID
-	payload.Text = text
-	payload.ParseMode = "HTML"
-	bs, err := json.Marshal(&payload)
-	url := fmt.Sprintf("%s/bot%s/sendMessage", telegramURL, t.BotToken)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bs))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := t.HTTPClient.Do(req)
+func (c *Client) SendMessage(text string) (string, error) {
+	payload := telegramPayload{
+		ChatID:    c.groupID,
+		Text:      text,
+		ParseMode: "HTML",
+	}
+	path := fmt.Sprintf("/bot%s/sendMessage", c.botToken)
+
+	respBs, err := c.baseRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
-
-}
-
-func setSecondsDuration(seconds int) time.Duration {
-	return time.Second * time.Duration(seconds)
+	return string(respBs), nil
 }

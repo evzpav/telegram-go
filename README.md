@@ -1,4 +1,4 @@
-# telegram-go
+# Telegram Go
 
 ## Example on how to use Telegram with Go language
 
@@ -21,24 +21,23 @@ func main() {
 	message += "<code> This is code text </code> \n"
 	message += "@BotFather \n" //use existing Telegram username
 
-	t := telegram.NewClient(os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_GROUP_ID"))
+	t := telegram.New(os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_GROUP_ID"))
 	sentMessage, err := t.SendMessage(message)
 	if err != nil {
-		//handle error
 		log.Println(err)
 	}
 	log.Println(sentMessage)
 }
+
 ```
 
 ### To run example:
 ```bash
+# clone project
 export TELEGRAM_BOT_TOKEN=yourtoken
 export TELEGRAM_GROUP_ID=yourgrouporchannelid
 
-go build
-
-./telegram-go
+go run main.go
 
 ```
 ### Expected result:
