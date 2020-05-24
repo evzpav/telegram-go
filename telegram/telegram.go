@@ -9,9 +9,12 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	httpclient "github.com/evzpav/telegram-go/http_client"
 )
 
 const telegramURL string = "https://api.telegram.org"
+const defaultTimeout = 60
 
 type telegramPayload struct {
 	ChatID    string `json:"chat_id"`
@@ -19,38 +22,73 @@ type telegramPayload struct {
 	ParseMode string `json:"parse_mode"`
 }
 
+//From ...
+type From struct {
+	ID        int64  `json:"id"`
+	IsBot     bool   `json:"is_bot"`
+	FirstName string `json:"first_name"`
+	Username  string `json:"username"`
+}
+
+//Chat ...
+type Chat struct {
+	ID                          int64  `json:"id"`
+	Title                       string `json:"title"`
+	Type                        string `json:"type"`
+	AllMembersAreAdministrators bool   `json:"all_members_are_administrators"`
+}
+
+//Result ...
+type Result struct {
+	From     From                     `json:"from"`
+	Chat     Chat                     `json:"chat"`
+	Date     int64                    `json:"date"`
+	Text     string                   `json:"text"`
+	Entities []map[string]interface{} `json:"entities"`
+}
+
+//Response is the struct of the status code 200 response
+type Response struct {
+	OK          bool   `json:"ok"`
+	Result      Result `json:"result,omitempty"`
+	ErrorCode   int    `json:"error_code,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
 //Client struct
 type Client struct {
-	httpClient *http.Client
+	httpClient httpclient.HTTPClient
 	botToken   string
 	groupID    string
 	baseURL    string
+	timeout    int
 }
 
 //New creates telegram Client
 func New(botToken, telegramGroupID string) *Client {
-	return &Client{
-		httpClient: &http.Client{
-			Timeout: 60,
-			Transport: &http.Transport{
-				Dial:                (&net.Dialer{Timeout: 60}).Dial,
-				TLSHandshakeTimeout: 60,
-			},
+	httpClient := &http.Client{
+		Timeout: defaultTimeout * time.Second,
+		Transport: &http.Transport{
+			Dial:                (&net.Dialer{Timeout: defaultTimeout * time.Second}).Dial,
+			TLSHandshakeTimeout: defaultTimeout * time.Second,
 		},
-		baseURL:  telegramURL,
-		botToken: botToken,
-		groupID:  telegramGroupID,
+	}
+	return NewWithArguments(telegramURL, botToken, telegramGroupID, httpClient)
+}
+
+//NewWithArguments creates telegram Client with arguments
+func NewWithArguments(url, botToken, groupID string, httpClient httpclient.HTTPClient) *Client {
+	return &Client{
+		httpClient: httpClient,
+		baseURL:    url,
+		botToken:   botToken,
+		groupID:    groupID,
 	}
 }
 
 //WithHTTPClient set new http Client if needed
-func (c *Client) WithHTTPClient(newHTTPClient *http.Client) {
+func (c *Client) WithHTTPClient(newHTTPClient httpclient.HTTPClient) {
 	c.httpClient = newHTTPClient
-}
-
-//WithTimeout set new timeout in seconds
-func (c *Client) WithTimeout(newTimeout int) {
-	c.httpClient.Timeout = time.Second * time.Duration(newTimeout)
 }
 
 //WithURL set new URL
@@ -97,7 +135,7 @@ func (c *Client) baseRequest(method, path string, body interface{}) ([]byte, err
 }
 
 //SendMessage uses sendMessage method from Telegram API
-func (c *Client) SendMessage(text string) (string, error) {
+func (c *Client) SendMessage(text string) (Response, error) {
 	payload := telegramPayload{
 		ChatID:    c.groupID,
 		Text:      text,
@@ -107,8 +145,17 @@ func (c *Client) SendMessage(text string) (string, error) {
 
 	respBs, err := c.baseRequest(http.MethodPost, path, payload)
 	if err != nil {
-		return "", err
+		return Response{}, err
 	}
 
-	return string(respBs), nil
+	var response Response
+	if err = json.Unmarshal(respBs, &response); err != nil {
+		return Response{}, err
+	}
+
+	if !response.OK {
+		return Response{}, fmt.Errorf("failed to send message. error code: [%d]; description: [%s]", response.ErrorCode, response.Description)
+	}
+
+	return response, nil
 }
